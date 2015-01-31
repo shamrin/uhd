@@ -32,7 +32,7 @@ namespace po = boost::program_options;
 static bool stop_signal_called = false;
 void sig_int_handler(int){stop_signal_called = true;}
 
-template<typename samp_type> void send_from_file(
+template<typename samp_type> void loopback(
     uhd::usrp::multi_usrp::sptr usrp,
     const std::string &cpu_format,
     const std::string &wire_format,
@@ -71,9 +71,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //variables to be set by po
     std::string args, file, type, ant, subdev, ref, wirefmt;
     size_t spb;
-    double rate, freq, gain, bw, delay, lo_off;
-
-    std::cout << boost::format("Hello from rx_tx!") << std::endl;
+    double rate, rx_freq, tx_freq, gain, bw, delay, lo_off;
 
     //setup the program options
     po::options_description desc("Allowed options");
@@ -83,8 +81,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
         ("type", po::value<std::string>(&type)->default_value("short"), "sample type: double, float, or short")
         ("spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")
-        ("rate", po::value<double>(&rate), "rate of outgoing samples")
-        ("freq", po::value<double>(&freq), "RF center frequency in Hz")
+        ("rate", po::value<double>(&rate), "rate of incoming and outgoing samples")
+        ("rx-freq", po::value<double>(&rx_freq), "incoming RF center frequency in Hz")
+        ("tx-freq", po::value<double>(&tx_freq), "outgoing RF center frequency in Hz")
         ("lo_off", po::value<double>(&lo_off), "Offset for frontend LO in Hz (optional)")
         ("gain", po::value<double>(&gain), "gain for the RF chain")
         ("ant", po::value<std::string>(&ant), "antenna selection")
@@ -130,15 +129,19 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     usrp->set_tx_rate(rate);
     std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
 
-    //set the center frequency
-    if (not vm.count("freq")){
-        std::cerr << "Please specify the center frequency with --freq" << std::endl;
+    //set center frequencies
+    if (not vm.count("tx-freq")){
+        std::cerr << "Please specify the TX center frequency with --tx-freq" << std::endl;
         return ~0;
     }
-    std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq/1e6) << std::endl;
+//    if (not vm.count("rx-freq")){
+//        std::cerr << "Please specify the RX center frequency with --rx-freq" << std::endl;
+//        return ~0;
+//    }
+    std::cout << boost::format("Setting TX Freq: %f MHz...") % (tx_freq/1e6) << std::endl;
     uhd::tune_request_t tune_request;
-    if(vm.count("lo_off")) tune_request = uhd::tune_request_t(freq, lo_off);
-    else tune_request = uhd::tune_request_t(freq);
+    if(vm.count("lo_off")) tune_request = uhd::tune_request_t(tx_freq, lo_off);
+    else tune_request = uhd::tune_request_t(tx_freq);
     if(vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
     usrp->set_tx_freq(tune_request);
     std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq()/1e6) << std::endl << std::endl;
@@ -190,9 +193,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //send from file
     do{
-        if (type == "double") send_from_file<std::complex<double> >(usrp, "fc64", wirefmt, file, spb);
-        else if (type == "float") send_from_file<std::complex<float> >(usrp, "fc32", wirefmt, file, spb);
-        else if (type == "short") send_from_file<std::complex<short> >(usrp, "sc16", wirefmt, file, spb);
+        if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, file, spb);
+        else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, file, spb);
+        else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, file, spb);
         else throw std::runtime_error("Unknown type " + type);
 
         if(repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
