@@ -69,9 +69,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::set_thread_priority_safe();
 
     //variables to be set by po
-    std::string args, file, type, rx_ant, tx_ant, rx_subdev, tx_subdev, ref, wirefmt;
+    std::string args, /* del */ file, type, rx_ant, tx_ant, rx_subdev, tx_subdev, ref, wirefmt;
     size_t spb;
-    double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, delay, lo_off;
+    double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, /* del */ delay, lo_off;
 
     //setup the program options
     po::options_description desc("Allowed options");
@@ -104,11 +104,11 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //print the help message
     if (vm.count("help")){
-        std::cout << boost::format("UHD TX samples from file %s") % desc << std::endl;
+        std::cout << boost::format("UHD RX samples and TX them back (loopback) %s") % desc << std::endl;
         return ~0;
     }
 
-    bool repeat = vm.count("repeat");
+    /* del */ bool repeat = vm.count("repeat");
 
     //create a usrp device
     std::cout << std::endl;
@@ -169,11 +169,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cout << boost::format("Actual RX Gain: %f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
     }
 
-    //set the analog frontend filter bandwidth
     if (vm.count("bw")){
+        //set the analog frontend filter bandwidth
         std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % bw << std::endl;
         usrp->set_tx_bandwidth(bw);
         std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % usrp->get_tx_bandwidth() << std::endl << std::endl;
+        //set the IF filter bandwidth
+        std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % bw << std::endl;
+        usrp->set_rx_bandwidth(bw);
+        std::cout << boost::format("Actual RX Bandwidth: %f MHz...") % usrp->get_rx_bandwidth() << std::endl << std::endl;
     }
 
     //set antennas
@@ -215,7 +219,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, file, spb);
         else throw std::runtime_error("Unknown type " + type);
 
-        if(repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
+        /* del */ if(repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
     } while(repeat and not stop_signal_called);
 
     //finished
