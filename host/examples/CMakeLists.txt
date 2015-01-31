@@ -36,6 +36,7 @@ SET(example_sources
     txrx_loopback_to_file.cpp
     latency_test.cpp
     fpgpio.cpp
+    rx_tx.cpp
 )
 
 IF(ENABLE_OCTOCLOCK)
