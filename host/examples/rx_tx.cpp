@@ -40,26 +40,56 @@ template<typename samp_type> void loopback(
     size_t samps_per_buff
 ){
 
-    //create a transmit streamer
+    //create streamers
     uhd::stream_args_t stream_args(cpu_format, wire_format);
     uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
+    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
-    uhd::tx_metadata_t md;
-    md.start_of_burst = false;
-    md.end_of_burst = false;
+    uhd::tx_metadata_t tx_md;
+    uhd::rx_metadata_t rx_md;
+    bool overflow_message = true;
     std::vector<samp_type> buff(samps_per_buff);
-    std::ifstream infile(file.c_str(), std::ifstream::binary);
 
-    //loop until the entire file has been read
+    //setup streaming
+    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
+    stream_cmd.num_samps = 0;
+    stream_cmd.stream_now = true;
+    stream_cmd.time_spec = uhd::time_spec_t();
+    rx_stream->issue_stream_cmd(stream_cmd);
 
-    while(not md.end_of_burst and not stop_signal_called){
+    //loopback
+    while(not stop_signal_called){
 
-        infile.read((char*)&buff.front(), buff.size()*sizeof(samp_type));
-        size_t num_tx_samps = infile.gcount()/sizeof(samp_type);
+        size_t num_samps = rx_stream->recv(&buff.front(), buff.size(), rx_md, 3.0);
 
-        md.end_of_burst = infile.eof();
+        if (rx_md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
+            std::cout << boost::format("Timeout while streaming") << std::endl;
+            break;
+        }
+        if (rx_md.error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW){
+            if (overflow_message) {
+                overflow_message = false;
+                std::cerr << boost::format(
+                    "Got an overflow indication. Please consider the following:\n"
+                    "  Your write medium must sustain a rate of %fMB/s.\n"
+                    "  Dropped samples will not be written to the file.\n"
+                    "  Please modify this example for your purposes.\n"
+                    "  This message will not appear again.\n"
+                ) % (usrp->get_rx_rate()*sizeof(samp_type)/1e6);
+            }
+            continue;
+        }
+        if (rx_md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE){
+            std::string error = str(boost::format("Receiver error: %s") % rx_md.strerror());
+            if (continue_on_bad_packet){
+                std::cerr << error << std::endl;
+                continue;
+            }
+            else
+                throw std::runtime_error(error);
+        }
 
-        tx_stream->send(&buff.front(), num_tx_samps, md);
+        tx_stream->send(&buff.front(), num_samps, tx_md);
     }
 
     infile.close();
@@ -218,7 +248,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
     }
 
-    //send from file
+    //loopback
     do{
         if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, file, spb);
         else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, file, spb);
@@ -226,7 +256,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         else throw std::runtime_error("Unknown type " + type);
 
         /* del */ if(repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
-    } while(repeat and not stop_signal_called);
+    } while(/* del */ repeat and not stop_signal_called);
 
     //finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
