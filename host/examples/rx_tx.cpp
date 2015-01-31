@@ -36,7 +36,6 @@ template<typename samp_type> void loopback(
     uhd::usrp::multi_usrp::sptr usrp,
     const std::string &cpu_format,
     const std::string &wire_format,
-    const std::string &file,
     size_t samps_per_buff
 ){
 
@@ -72,8 +71,7 @@ template<typename samp_type> void loopback(
                 std::cerr << boost::format(
                     "Got an overflow indication. Please consider the following:\n"
                     "  Your write medium must sustain a rate of %fMB/s.\n"
-                    "  Dropped samples will not be written to the file.\n"
-                    "  Please modify this example for your purposes.\n"
+                    "  Dropped samples will not be transmitted.\n"
                     "  This message will not appear again.\n"
                 ) % (usrp->get_rx_rate()*sizeof(samp_type)/1e6);
             }
@@ -99,16 +97,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::set_thread_priority_safe();
 
     //variables to be set by po
-    std::string args, /* del */ file, type, rx_ant, tx_ant, rx_subdev, tx_subdev, ref, wirefmt;
+    std::string args, type, rx_ant, tx_ant, rx_subdev, tx_subdev, ref, wirefmt;
     size_t spb;
-    double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, /* del */ delay, lo_off;
+    double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, lo_off;
 
     //setup the program options
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "help message")
         ("args", po::value<std::string>(&args)->default_value(""), "multi uhd device address args")
-        /* del */ ("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
         ("type", po::value<std::string>(&type)->default_value("short"), "sample type: double, float, or short")
         ("spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")
         ("rate", po::value<double>(&rate), "rate of incoming and outgoing samples")
@@ -124,8 +121,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("bw", po::value<double>(&bw), "analog frontend filter bandwidth in Hz")
         ("ref", po::value<std::string>(&ref)->default_value("internal"), "reference source (internal, external, mimo)")
         ("wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")
-        /* del */ ("delay", po::value<double>(&delay)->default_value(0.0), "specify a delay between repeated transmission of file")
-        /* del */ ("repeat", "repeatedly transmit file")
         ("int-n", "tune USRP with integer-n tuning")
     ;
     po::variables_map vm;
@@ -137,8 +132,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cout << boost::format("UHD RX samples and TX them back (loopback) %s") % desc << std::endl;
         return ~0;
     }
-
-    /* del */ bool repeat = vm.count("repeat");
 
     //create a usrp device
     std::cout << std::endl;
@@ -242,21 +235,17 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         UHD_ASSERT_THROW(ref_locked.to_bool());
     }
 
-    //set sigint if user wants to receive
-    if(repeat){
-        std::signal(SIGINT, &sig_int_handler);
-        std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
-    }
+    //set sigint
+    std::signal(SIGINT, &sig_int_handler);
+    std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
 
     //loopback
     do{
-        if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, file, spb);
-        else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, file, spb);
-        else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, file, spb);
+        if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, spb);
+        else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, spb);
+        else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, spb);
         else throw std::runtime_error("Unknown type " + type);
-
-        /* del */ if(repeat and delay != 0.0) boost::this_thread::sleep(boost::posix_time::milliseconds(delay));
-    } while(/* del */ repeat and not stop_signal_called);
+    } while(not stop_signal_called);
 
     //finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
