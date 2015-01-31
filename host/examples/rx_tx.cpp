@@ -69,7 +69,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     uhd::set_thread_priority_safe();
 
     //variables to be set by po
-    std::string args, file, type, ant, subdev, ref, wirefmt;
+    std::string args, file, type, rx_ant, tx_ant, rx_subdev, tx_subdev, ref, wirefmt;
     size_t spb;
     double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, delay, lo_off;
 
@@ -87,12 +87,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         ("lo_off", po::value<double>(&lo_off), "Offset for frontend LO in Hz (optional)")
         ("rx-gain", po::value<double>(&rx_gain), "RX gain for the RF chain")
         ("tx-gain", po::value<double>(&tx_gain), "TX gain for the RF chain")
-        ("ant", po::value<std::string>(&ant), "antenna selection")
-        ("subdev", po::value<std::string>(&subdev), "subdevice specification")
+        ("rx-ant", po::value<std::string>(&rx_ant), "RX antenna selection")
+        ("tx-ant", po::value<std::string>(&tx_ant), "TX antenna selection")
+        ("rx-subdev", po::value<std::string>(&rx_subdev), "RX subdevice specification")
+        ("tx-subdev", po::value<std::string>(&tx_subdev), "TX subdevice specification")
         ("bw", po::value<double>(&bw), "analog frontend filter bandwidth in Hz")
         ("ref", po::value<std::string>(&ref)->default_value("internal"), "reference source (internal, external, mimo)")
         ("wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")
-        ("delay", po::value<double>(&delay)->default_value(0.0), "specify a delay between repeated transmission of file")
+        /* del */ ("delay", po::value<double>(&delay)->default_value(0.0), "specify a delay between repeated transmission of file")
         /* del */ ("repeat", "repeatedly transmit file")
         ("int-n", "tune USRP with integer-n tuning")
     ;
@@ -117,7 +119,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     usrp->set_clock_source(ref);
 
     //always select the subdevice first, the channel mapping affects the other settings
-    if (vm.count("subdev")) usrp->set_tx_subdev_spec(subdev);
+    if (vm.count("tx-subdev")) usrp->set_tx_subdev_spec(tx_subdev);
+    if (vm.count("rx-subdev")) usrp->set_rx_subdev_spec(rx_subdev);
 
     std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
 
@@ -173,8 +176,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % usrp->get_tx_bandwidth() << std::endl << std::endl;
     }
 
-    //set the antenna
-    if (vm.count("ant")) usrp->set_tx_antenna(ant);
+    //set antennas
+    if (vm.count("tx-ant")) usrp->set_tx_antenna(tx_ant);
+    if (vm.count("rx-ant")) usrp->set_rx_antenna(rx_ant);
 
     boost::this_thread::sleep(boost::posix_time::seconds(1)); //allow for some setup time
 
