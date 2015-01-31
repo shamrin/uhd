@@ -58,7 +58,6 @@ template<typename samp_type> void loopback(
 
     //loopback
     while(not stop_signal_called){
-
         size_t num_samps = rx_stream->recv(&buff.front(), buff.size(), rx_md, 3.0);
 
         if (rx_md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
@@ -79,18 +78,12 @@ template<typename samp_type> void loopback(
         }
         if (rx_md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE){
             std::string error = str(boost::format("Receiver error: %s") % rx_md.strerror());
-            if (continue_on_bad_packet){
-                std::cerr << error << std::endl;
-                continue;
-            }
-            else
-                throw std::runtime_error(error);
+            std::cerr << error << std::endl;
+            continue;
         }
 
         tx_stream->send(&buff.front(), num_samps, tx_md);
     }
-
-    infile.close();
 }
 
 int UHD_SAFE_MAIN(int argc, char *argv[]){
@@ -240,12 +233,10 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
 
     //loopback
-    do{
-        if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, spb);
-        else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, spb);
-        else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, spb);
-        else throw std::runtime_error("Unknown type " + type);
-    } while(not stop_signal_called);
+    if (type == "double") loopback<std::complex<double> >(usrp, "fc64", wirefmt, spb);
+    else if (type == "float") loopback<std::complex<float> >(usrp, "fc32", wirefmt, spb);
+    else if (type == "short") loopback<std::complex<short> >(usrp, "sc16", wirefmt, spb);
+    else throw std::runtime_error("Unknown type " + type);
 
     //finished
     std::cout << std::endl << "Done!" << std::endl << std::endl;
