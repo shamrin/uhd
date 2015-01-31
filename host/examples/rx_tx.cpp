@@ -71,28 +71,29 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     //variables to be set by po
     std::string args, file, type, ant, subdev, ref, wirefmt;
     size_t spb;
-    double rate, rx_freq, tx_freq, gain, bw, delay, lo_off;
+    double rate, rx_freq, tx_freq, rx_gain, tx_gain, bw, delay, lo_off;
 
     //setup the program options
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "help message")
         ("args", po::value<std::string>(&args)->default_value(""), "multi uhd device address args")
-        ("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
+        /* del */ ("file", po::value<std::string>(&file)->default_value("usrp_samples.dat"), "name of the file to read binary samples from")
         ("type", po::value<std::string>(&type)->default_value("short"), "sample type: double, float, or short")
         ("spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")
         ("rate", po::value<double>(&rate), "rate of incoming and outgoing samples")
-        ("rx-freq", po::value<double>(&rx_freq), "incoming RF center frequency in Hz")
-        ("tx-freq", po::value<double>(&tx_freq), "outgoing RF center frequency in Hz")
+        ("rx-freq", po::value<double>(&rx_freq), "RX RF center frequency in Hz")
+        ("tx-freq", po::value<double>(&tx_freq), "TX RF center frequency in Hz")
         ("lo_off", po::value<double>(&lo_off), "Offset for frontend LO in Hz (optional)")
-        ("gain", po::value<double>(&gain), "gain for the RF chain")
+        ("rx-gain", po::value<double>(&rx_gain), "RX gain for the RF chain")
+        ("tx-gain", po::value<double>(&tx_gain), "TX gain for the RF chain")
         ("ant", po::value<std::string>(&ant), "antenna selection")
         ("subdev", po::value<std::string>(&subdev), "subdevice specification")
         ("bw", po::value<double>(&bw), "analog frontend filter bandwidth in Hz")
         ("ref", po::value<std::string>(&ref)->default_value("internal"), "reference source (internal, external, mimo)")
         ("wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")
         ("delay", po::value<double>(&delay)->default_value(0.0), "specify a delay between repeated transmission of file")
-        ("repeat", "repeatedly transmit file")
+        /* del */ ("repeat", "repeatedly transmit file")
         ("int-n", "tune USRP with integer-n tuning")
     ;
     po::variables_map vm;
@@ -129,28 +130,40 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
     usrp->set_tx_rate(rate);
     std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
 
-    //set center frequencies
+    //set TX center frequency
     if (not vm.count("tx-freq")){
         std::cerr << "Please specify the TX center frequency with --tx-freq" << std::endl;
         return ~0;
     }
-//    if (not vm.count("rx-freq")){
-//        std::cerr << "Please specify the RX center frequency with --rx-freq" << std::endl;
-//        return ~0;
-//    }
     std::cout << boost::format("Setting TX Freq: %f MHz...") % (tx_freq/1e6) << std::endl;
-    uhd::tune_request_t tune_request;
-    if(vm.count("lo_off")) tune_request = uhd::tune_request_t(tx_freq, lo_off);
-    else tune_request = uhd::tune_request_t(tx_freq);
-    if(vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
-    usrp->set_tx_freq(tune_request);
+    uhd::tune_request_t tx_tune_request;
+    if(vm.count("lo_off")) tx_tune_request = uhd::tune_request_t(tx_freq, lo_off);
+    else tx_tune_request = uhd::tune_request_t(tx_freq);
+    if(vm.count("int-n")) tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
+    usrp->set_tx_freq(tx_tune_request);
     std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq()/1e6) << std::endl << std::endl;
 
-    //set the rf gain
-    if (vm.count("gain")){
-        std::cout << boost::format("Setting TX Gain: %f dB...") % gain << std::endl;
-        usrp->set_tx_gain(gain);
+    //set RX center frequency
+    if (not vm.count("rx-freq")){
+        std::cerr << "Please specify the RX center frequency with --rx-freq" << std::endl;
+        return ~0;
+    }
+    std::cout << boost::format("Setting RX Freq: %f MHz...") % (rx_freq/1e6) << std::endl;
+    uhd::tune_request_t rx_tune_request(rx_freq);
+    if(vm.count("int-n")) rx_tune_request.args = uhd::device_addr_t("mode_n=integer");
+    usrp->set_rx_freq(rx_tune_request);
+    std::cout << boost::format("Actual RX Freq: %f MHz...") % (usrp->get_rx_freq()/1e6) << std::endl << std::endl;
+
+    //set rf gains
+    if (vm.count("tx-gain")){
+        std::cout << boost::format("Setting TX Gain: %f dB...") % tx_gain << std::endl;
+        usrp->set_tx_gain(tx_gain);
         std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
+    }
+    if (vm.count("rx-gain")) {
+        std::cout << boost::format("Setting RX Gain: %f dB...") % rx_gain << std::endl;
+        usrp->set_rx_gain(rx_gain);
+        std::cout << boost::format("Actual RX Gain: %f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
     }
 
     //set the analog frontend filter bandwidth
