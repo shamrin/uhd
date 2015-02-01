@@ -84,6 +84,9 @@ template<typename samp_type> void loopback(
 
         tx_stream->send(&buff.front(), num_samps, tx_md);
     }
+
+    stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+    rx_stream->issue_stream_cmd(stream_cmd);
 }
 
 int UHD_SAFE_MAIN(int argc, char *argv[]){
