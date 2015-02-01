@@ -30,7 +30,7 @@
 namespace po = boost::program_options;
 
 static bool stop_signal_called = false;
-void sig_int_handler(int){stop_signal_called = true;}
+void sig_int_handler(int){ std::cerr << "Stopping..."; stop_signal_called = true; }
 
 template<typename samp_type> void loopback(
     uhd::usrp::multi_usrp::sptr usrp,
