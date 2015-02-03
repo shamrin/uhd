@@ -82,8 +82,7 @@ public:
         sem_wait(&ring_get_sem);
         BufT* buff = ring_get();
 
-        /*size_t num_samps = */tx_stream->send(&buff->front(), buff->size(), tx_md);
-//        std::cerr << boost::format("send %d\n") % (num_samps);
+        tx_stream->send(&buff->front(), buff->size(), tx_md);
         sem_post(&ring_put_sem);
     }
 
@@ -91,8 +90,7 @@ public:
         sem_wait(&ring_put_sem);
         BufT* buff = ring_put();
 
-        /*size_t num_samps = */rx_stream->recv(&buff->front(), buff->size(), rx_md, 3.0);
-//        std::cerr << boost::format("recv %d\n") % (num_samps);
+        rx_stream->recv(&buff->front(), buff->size(), rx_md, 3.0);
         sem_post(&ring_get_sem);
     }
 
@@ -136,12 +134,7 @@ public:
             if (rx_md.error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW){
                 if (overflow_message) {
                     overflow_message = false;
-                    std::cerr << boost::format(
-                        "Got an overflow indication. Please consider the following:\n"
-                        "  Your write medium must sustain a rate of %fMB/s.\n"
-                        "  Dropped samples will not be transmitted.\n"
-                        "  This message will not appear again.\n"
-                    ) % (usrp->get_rx_rate()*sizeof(samp_type)/1e6);
+                    std::cerr << "Got an overflow indication. This message won't appear again.\n";
                 }
                 continue;
             }
