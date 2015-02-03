@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
+// TODO
+// * write file in recv() and then check it with tx_samples_from_file
+// * check that rx_samples_to_file -> tx_samples_to_file procedure works
+// * check that old rx_samples_to_file I used as an example works correctly
 
 #include <uhd/types/tune_request.hpp>
 #include <uhd/utils/thread_priority.hpp>
