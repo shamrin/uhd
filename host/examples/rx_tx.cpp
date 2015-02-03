@@ -100,6 +100,8 @@ public:
         uhd::usrp::multi_usrp::sptr usrp,
         const uhd::stream_args_t& stream_args
     ) {
+        uhd::set_thread_priority_safe();
+
         uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
         uhd::tx_metadata_t tx_md;
         while(not stop_signal_called){
@@ -111,6 +113,8 @@ public:
         uhd::usrp::multi_usrp::sptr usrp,
         const uhd::stream_args_t& stream_args
     ) {
+        uhd::set_thread_priority_safe();
+
         uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
         uhd::rx_metadata_t rx_md;
         bool overflow_message = true;
