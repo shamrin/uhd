@@ -15,9 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 // TODO
-// * write file in recv() and then check it with tx_samples_from_file
-// * check that rx_samples_to_file -> tx_samples_to_file procedure works
-// * check that old rx_samples_to_file I used as an example works correctly
+// * Two channels
 
 #include <uhd/types/tune_request.hpp>
 #include <uhd/utils/thread_priority.hpp>
@@ -211,7 +209,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //print the help message
     if (vm.count("help")){
-        std::cout << boost::format("UHD RX samples and TX them back (loopback) %s") % desc << std::endl;
+        std::cout << boost::format("UHD RX samples and TX them back (loopback)\n\n%s") % desc << std::endl;
         return ~0;
     }
 
@@ -267,25 +265,25 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     //set rf gains
     if (vm.count("tx-gain")){
-        std::cout << boost::format("Setting TX Gain: %f dB...") % tx_gain << std::endl;
+        std::cout << boost::format("Setting TX Gain: %.3f dB...") % tx_gain << std::endl;
         usrp->set_tx_gain(tx_gain);
-        std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
+        std::cout << boost::format("Actual TX Gain: %.3f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
     }
     if (vm.count("rx-gain")) {
-        std::cout << boost::format("Setting RX Gain: %f dB...") % rx_gain << std::endl;
+        std::cout << boost::format("Setting RX Gain: %.3f dB...") % rx_gain << std::endl;
         usrp->set_rx_gain(rx_gain);
-        std::cout << boost::format("Actual RX Gain: %f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
+        std::cout << boost::format("Actual RX Gain: %.3f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
     }
 
     if (vm.count("bw")){
         //set the analog frontend filter bandwidth
-        std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % bw << std::endl;
+        std::cout << boost::format("Setting TX Bandwidth: %.0f Hz...") % bw << std::endl;
         usrp->set_tx_bandwidth(bw);
-        std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % usrp->get_tx_bandwidth() << std::endl << std::endl;
+        std::cout << boost::format("Actual TX Bandwidth: %.0f Hz...") % usrp->get_tx_bandwidth() << std::endl << std::endl;
         //set the IF filter bandwidth
-        std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % bw << std::endl;
+        std::cout << boost::format("Setting RX Bandwidth: %.0f Hz...") % bw << std::endl;
         usrp->set_rx_bandwidth(bw);
-        std::cout << boost::format("Actual RX Bandwidth: %f MHz...") % usrp->get_rx_bandwidth() << std::endl << std::endl;
+        std::cout << boost::format("Actual RX Bandwidth: %.0f Hz...") % usrp->get_rx_bandwidth() << std::endl << std::endl;
     }
 
     //set antennas
