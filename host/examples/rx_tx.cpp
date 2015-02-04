@@ -181,41 +181,39 @@ void set_channel_params(
 ) {
     int c = channel + 1;
 
-    std::cout << boost::format("## Channel %d") % (c) << std::endl;
+    std::cout << boost::format("** Channel %d **") % (c) << std::endl;
 
     //set TX center frequency
-    std::cout << boost::format("Setting TX%d Freq: %f MHz...") % (c) % (tx_freq/1e6) << std::endl;
+    std::cout << boost::format("Setting TX%d Freq to %f MHz: ") % (c) % (tx_freq/1e6) << std::endl;
     uhd::tune_request_t tx_tune_request;
     if(vm.count("lo_off")) tx_tune_request = uhd::tune_request_t(tx_freq, lo_off);
     else tx_tune_request = uhd::tune_request_t(tx_freq);
     if(vm.count("int-n")) tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
     usrp->set_tx_freq(tx_tune_request, channel);
-    std::cout << boost::format("Actual TX%d Freq: %f MHz...") % (c) % (usrp->get_tx_freq(channel)/1e6) << std::endl << std::endl;
 
     //set RX center frequency
-    std::cout << boost::format("Setting RX%d Freq: %f MHz...") % (c) % (rx_freq/1e6) << std::endl;
+    std::cout << boost::format("Setting RX%d Freq to %f MHz: ") % (c) % (rx_freq/1e6) << std::endl;
     uhd::tune_request_t rx_tune_request(rx_freq);
     if(vm.count("int-n")) rx_tune_request.args = uhd::device_addr_t("mode_n=integer");
     usrp->set_rx_freq(rx_tune_request, channel);
-    std::cout << boost::format("Actual RX%d Freq: %f MHz...") % (c) % (usrp->get_rx_freq(channel)/1e6) << std::endl << std::endl;
 
     //set rf gains
-    std::cout << boost::format("Setting TX%d Gain: %.3f dB...") % (c) % (tx_gain) << std::endl;
+    std::cout << boost::format("Setting TX%d Gain to %.3f dB: ") % (c) % (tx_gain);
     usrp->set_tx_gain(tx_gain, channel);
-    std::cout << boost::format("Actual TX%d Gain: %.3f dB...") % (c) % (usrp->get_tx_gain(channel)) << std::endl << std::endl;
-    std::cout << boost::format("Setting RX%d Gain: %.3f dB...") % (c) % (rx_gain) << std::endl;
+    std::cout << boost::format("actual %.3f dB") % (usrp->get_tx_gain(channel)) << std::endl;
+    std::cout << boost::format("Setting RX%d Gain to %.3f dB: ") % (c) % (rx_gain);
     usrp->set_rx_gain(rx_gain, channel);
-    std::cout << boost::format("Actual RX%d Gain: %.3f dB...") % (c) % (usrp->get_rx_gain(channel)) << std::endl << std::endl;
+    std::cout << boost::format("actual %.3f dB") % (usrp->get_rx_gain(channel)) << std::endl;
 
     if (vm.count("bw")){
         //set the analog frontend filter bandwidth
-        std::cout << boost::format("Setting TX%d Bandwidth: %.0f Hz...") % (c) % (bw) << std::endl;
+        std::cout << boost::format("Setting TX%d Bandwidth to %.0f Hz: ") % (c) % (bw);
         usrp->set_tx_bandwidth(bw, channel);
-        std::cout << boost::format("Actual TX%d Bandwidth: %.0f Hz...") % (c) % (usrp->get_tx_bandwidth(channel)) << std::endl << std::endl;
+        std::cout << boost::format("actual %.0f Hz...") % (usrp->get_tx_bandwidth(channel)) << std::endl;
         //set the IF filter bandwidth
-        std::cout << boost::format("Setting RX%d Bandwidth: %.0f Hz...") % (c) % (bw) << std::endl;
+        std::cout << boost::format("Setting RX%d Bandwidth to %.0f Hz: ") % (c) % (bw);
         usrp->set_rx_bandwidth(bw, channel);
-        std::cout << boost::format("Actual RX%d Bandwidth: %.0f Hz...") % (c) % (usrp->get_rx_bandwidth(channel)) << std::endl << std::endl;
+        std::cout << boost::format("actual %.0f Hz...") % (usrp->get_rx_bandwidth(channel)) << std::endl;
     }
 
     //set antennas
@@ -303,12 +301,12 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::cerr << "Please specify the sample rate with --rate" << std::endl;
         return ~0;
     }
-    std::cout << boost::format("Setting TX Rate: %f Msps...") % (rate/1e6) << std::endl;
+    std::cout << boost::format("Setting TX Rate to %f Msps: ") % (rate/1e6);
     usrp->set_tx_rate(rate);
-    std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate()/1e6) << std::endl << std::endl;
-    std::cout << boost::format("Setting RX Rate: %f Msps...") % (rate/1e6) << std::endl;
+    std::cout << boost::format("actual %f Msps") % (usrp->get_tx_rate()/1e6) << std::endl;
+    std::cout << boost::format("Setting RX Rate to %f Msps: ") % (rate/1e6);
     usrp->set_rx_rate(rate);
-    std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate()/1e6) << std::endl << std::endl;
+    std::cout << boost::format("actual %f Msps") % (usrp->get_rx_rate()/1e6) << std::endl;
 
     if (not vm.count("tx1-freq")){
         std::cerr << "Please specify TX1 center frequency with --tx1-freq" << std::endl;
